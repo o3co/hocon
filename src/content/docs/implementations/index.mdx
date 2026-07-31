@@ -1,0 +1,65 @@
+---
+title: Choosing an implementation
+description: How the TypeScript, Go, Rust and Python HOCON parsers differ, and what they deliberately share.
+---
+
+import ImplementationTable from '../../../components/ImplementationTable.astro';
+import ComplianceTable from '../../../components/ComplianceTable.astro';
+
+In most cases the answer is "the one for the language you are writing in" — that is the point
+of maintaining four. They share a specification, a test corpus and a three-stage pipeline
+(lexer, parser, resolver), and behaviour is compared across all four before anything is
+released.
+
+<ImplementationTable />
+
+*The **Requires** column is read from each repository's `package.json`, `go.mod`, `Cargo.toml`
+and `pyproject.toml` when this page is built, so it cannot drift from the manifests.*
+
+## What they share
+
+**One specification.** Every clause of Lightbend's `HOCON.md` is a numbered item, and every
+item has a recorded status per implementation. Behaviour outside the specification — the
+places where the spec is silent and four independent parsers could reasonably disagree — is
+pinned separately as a numbered convention, so "undefined" never quietly means "different".
+
+**One corpus.** Fixtures and expected values live in
+[xx.hocon](https://github.com/o3co/xx.hocon) and are generated from Lightbend's own
+implementation, not hand-written. All four run against it.
+
+**One pipeline.** Lexer, parser, resolver, in that order, with substitution resolution as a
+distinct phase after the document is fully parsed. A fix in one port is a diff the other three
+can be read against.
+
+## Where they differ, and why
+
+**Dependencies.** Python is pure standard library. Go and TypeScript carry no runtime
+dependencies in the core. Rust carries one (`indexmap`, for insertion-ordered maps). Every
+foreign-format adapter is opt-in in all four, so nothing reaches the core.
+
+**Language-forced divergence.** A few differences are not choices. JavaScript strings are
+UTF-16 and can hold an unpaired surrogate, so the TypeScript port accepts one where Rust
+refuses; Go strings are arbitrary bytes where JavaScript strings arrive already decoded. These
+are recorded as per-implementation out-of-scope items with the reasoning attached, rather than
+smoothed over.
+
+**Coverage.** The four are not at identical points on the checklist at any given moment.
+
+<ComplianceTable />
+
+Two denominators are reported because one alone misleads. **Spec-total** divides by every item
+in the specification, including ones an implementation deliberately does not support, and
+answers "how much of HOCON does this handle?". **In-scope** drops that implementation's
+out-of-scope items and answers "of what it undertakes, how much is covered?". Neither is the
+flattering number by construction.
+
+[Full matrix, item by item →](https://github.com/o3co/xx.hocon/blob/main/docs/compliance-matrix.md)
+
+## Beyond parsing
+
+Every implementation can also read JSON with comments, TOML, YAML and Java `.properties` into
+the same configuration object, so a single API covers a mixed repository —
+see [format adapters](adapters/).
+
+If the consumer of your configuration cannot be changed at all,
+[hocon2](../tools/hocon2/) converts HOCON to those formats and back from the command line.

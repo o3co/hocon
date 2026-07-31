@@ -1,0 +1,19 @@
+/* Accent tuned toward the HOCON brace motif in the logo — a warm amber that
+   stays legible on both themes without competing with syntax highlighting. */
+:root {
+  --sl-color-accent-low: #3a2a06;
+  --sl-color-accent: #b7791f;
+  --sl-color-accent-high: #f0c674;
+}
+
+:root[data-theme='light'] {
+  --sl-color-accent-low: #fdf3d7;
+  --sl-color-accent: #a06612;
+  --sl-color-accent-high: #4a3006;
+}
+
+/* The landing page leads with a code sample; give it room to breathe against
+   the hero rather than sitting flush under it. */
+.hero + * {
+  margin-block-start: 1.5rem;
+}

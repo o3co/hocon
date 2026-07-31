@@ -1,0 +1,143 @@
+---
+title: Quick start
+description: Install a HOCON parser and read your first value, in TypeScript, Go, Rust or Python.
+sidebar:
+  order: 2
+---
+
+import { Tabs, TabItem } from '@astrojs/starlight/components';
+import InstallMatrix from '../../../components/InstallMatrix.astro';
+
+## Install
+
+<InstallMatrix />
+
+## Parse and read
+
+Pick a language. The tab selection is shared across the site, so the rest of these pages
+follow it.
+
+<Tabs syncKey="implementation">
+<TabItem label="TypeScript">
+
+```ts
+import { parse } from '@o3co/ts.hocon'
+
+const cfg = parse(`
+  server {
+    host = "localhost"
+    port = 8080
+  }
+`)
+
+cfg.getString('server.host')   // "localhost"
+cfg.getNumber('server.port')   // 8080
+cfg.has('server.host')         // true
+```
+
+</TabItem>
+<TabItem label="Go">
+
+```go
+import "github.com/o3co/go.hocon"
+
+cfg, err := hocon.ParseString(`
+  server {
+    host = "localhost"
+    port = 8080
+  }
+`)
+if err != nil {
+    log.Fatal(err)
+}
+
+host := cfg.GetString("server.host")  // "localhost"
+port := cfg.GetInt("server.port")     // 8080
+```
+
+</TabItem>
+<TabItem label="Rust">
+
+```rust
+use hocon;
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let config = hocon::parse(r#"
+        server {
+            host = "localhost"
+            port = 8080
+        }
+    "#)?;
+
+    let host = config.get_string("server.host")?;
+    let port = config.get_i64("server.port")?;
+
+    println!("Server: {}:{}", host, port);
+    Ok(())
+}
+```
+
+</TabItem>
+<TabItem label="Python">
+
+```python
+import hocon
+
+cfg = hocon.parse("""
+    server {
+        host = "localhost"
+        port = 8080
+    }
+""")
+
+cfg.get_string("server.host")   # "localhost"
+cfg.get_int("server.port")      # 8080
+cfg.has("server.host")          # True
+```
+
+</TabItem>
+</Tabs>
+
+The accessor names follow each language's conventions rather than a single cross-language
+spelling — `getString` in TypeScript, `GetString` in Go, `get_string` in Rust and Python. What
+they do is identical.
+
+## Layer environment overrides
+
+The pattern most configuration reaches for: a default in the file, overridden by the
+environment when set, with nothing to change in code.
+
+```hocon title="app.conf"
+app {
+  log-level = info
+  log-level = ${?LOG_LEVEL}
+
+  database {
+    url = "postgres://localhost/dev"
+    url = ${?DATABASE_URL}
+    pool-size = 10
+    pool-size = ${?DB_POOL_SIZE}
+  }
+}
+```
+
+`${?VAR}` resolves against the environment, and when the variable is unset the line is skipped
+entirely — so the default above it survives. No templating step, no `envsubst`, no sentinel
+values.
+
+## Where each library documents itself
+
+The full API surface — typed accessors, `Option` variants, deferred resolution, fallback
+merging, error types — is documented per implementation rather than duplicated here, because a
+single cross-language API page would go stale in four directions at once.
+
+- [ts.hocon README](https://github.com/o3co/ts.hocon#api) and [TypeDoc](https://o3co.github.io/ts.hocon/)
+- [go.hocon README](https://github.com/o3co/go.hocon#api) and [pkg.go.dev](https://pkg.go.dev/github.com/o3co/go.hocon)
+- [rs.hocon README](https://github.com/o3co/rs.hocon#api-reference) and [docs.rs](https://docs.rs/hocon-parser)
+- [py.hocon README](https://github.com/o3co/py.hocon#api-reference)
+
+## Next
+
+- [What HOCON actually is](../what-is-hocon/) — the format, and the parts that surprise people
+- [Choosing an implementation](../../implementations/) — how the four differ
+- [Reading foreign formats](../../implementations/adapters/) — JSON, TOML, YAML and `.properties` through the same API

@@ -1,0 +1,113 @@
+---
+title: Format adapters
+description: Reading JSON with comments, TOML, YAML, Java .properties and environment variables into the same configuration object.
+---
+
+import { Tabs, TabItem } from '@astrojs/starlight/components';
+import { Aside } from '@astrojs/starlight/components';
+
+A real repository rarely holds one configuration format. All four implementations can ingest
+foreign formats into the same configuration object, so the code reading a value does not have
+to know which file it came from.
+
+Supported everywhere: **environment variables** (bulk mount and `.env` files), **Java
+`.properties`**, **JSON with comments** (JSONC/JSON5), **TOML** and **YAML**. Plain JSON needs
+no adapter — HOCON is a superset of it.
+
+## How each language keeps the core clean
+
+The mechanism differs per language, but the goal is the same everywhere: the core parser takes
+on no dependency because an adapter exists, and you pay for a decoder only if you use it.
+
+<Tabs syncKey="implementation">
+<TabItem label="TypeScript">
+
+Subpath exports, with the decoder as an optional peer dependency.
+
+```sh
+npm install @o3co/ts.hocon smol-toml   # only if you need TOML
+```
+
+```ts
+import { fromToml } from '@o3co/ts.hocon/adapters/toml'
+```
+
+</TabItem>
+<TabItem label="Go">
+
+A nested module. `github.com/o3co/go.hocon` and `github.com/o3co/go.hocon/adapters` have
+separate `go.mod` files, so the core module's dependency graph stays empty.
+
+```sh
+go get github.com/o3co/go.hocon/adapters
+```
+
+</TabItem>
+<TabItem label="Rust">
+
+Cargo features, off by default.
+
+```sh
+cargo add hocon-parser --features adapters-toml
+```
+
+```rust
+use hocon::adapters::toml;
+```
+
+</TabItem>
+<TabItem label="Python">
+
+Submodules, with extras for the one decoder that is not in the standard library.
+
+```sh
+pip install hocon-parser          # TOML works already — stdlib tomllib
+pip install "hocon-parser[yaml]"  # YAML needs ruamel.yaml
+```
+
+```python
+from hocon.adapters import toml
+```
+
+</TabItem>
+</Tabs>
+
+## What ingestion does and does not do
+
+Ingestion happens at the **value** level. A foreign document is decoded by its own library into
+a tree, and that tree is handed to the configuration model directly. It is never rendered as
+HOCON text and re-parsed.
+
+The consequence is worth stating plainly: **nothing inside a TOML or YAML file becomes HOCON
+syntax**. A string that reads `${HOME}` in a YAML document stays that literal string. It does
+not become a substitution. The same is true of `+=`, of concatenation, and of `include`.
+Ingested trees arrive fully resolved — they can be the *target* of a substitution written in a
+HOCON file, but they never contain one.
+
+<Aside type="caution" title="YAML scalars are the YAML library's answer, not ours">
+How a YAML document decides that `no` is a boolean, or that `1.0` is a float, is settled by the
+YAML library each implementation uses — and those libraries do not all agree, particularly
+across YAML 1.1 and 1.2. This project pins the mapping *from* the decoded tree *onto* the
+configuration model, and explicitly does not pin scalar resolution. Where that matters, every
+implementation exposes a tree-level entry point so you can decode with a library you have
+chosen yourself and hand the result in.
+</Aside>
+
+## The rules are numbered, and shared
+
+Foreign-format behaviour is specified as **F-items** in
+[`format-ingestion-mapping.md`](https://github.com/o3co/xx.hocon/blob/main/docs/format-ingestion-mapping.md),
+in the same style as the specification checklist. Errors raised by the adapters cite the item
+number, so an error like `(spec F1.6)` leads directly to the rule that produced it.
+
+These items are deliberately kept out of the compliance percentages. Lightbend's specification
+says nothing about ingesting TOML, so there is no reference implementation to be measured
+against — for everything except `.properties` there is no oracle at all. An F-item is a
+decision this project made and then held four implementations to, verified by differential
+fixtures rather than by an external authority. Counting those as "specification compliance"
+would be inventing credit.
+
+## Reading further
+
+- [Format ingestion mapping](https://github.com/o3co/xx.hocon/blob/main/docs/format-ingestion-mapping.md) — every F-item with its rationale
+- [Specification compliance](../../spec/compliance/) — the separate, spec-derived S-items

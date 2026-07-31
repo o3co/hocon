@@ -1,0 +1,177 @@
+---
+/**
+ * All four implementations side by side, each with its install line.
+ *
+ * Shown as a grid rather than tabs because "there are four of these and they
+ * agree" is the point of the project — hiding three behind a tab strip buries
+ * it. It is also where most of the analytics signal comes from: which card a
+ * visitor copies from is the closest thing this site has to intent.
+ */
+import { getImplementationFacts } from '../data/implementations';
+
+const implementations = await getImplementationFacts();
+---
+
+<div class="install-matrix not-content">
+  {
+    implementations.map((impl) => (
+      <article class="install-card">
+        <header class="install-card__header">
+          <h3 class="install-card__language">{impl.language}</h3>
+          <span class="install-card__requirement">{impl.minimumVersion}</span>
+        </header>
+
+        <p class="install-card__note">{impl.note}</p>
+
+        <div class="install-card__command">
+          <code>{impl.install}</code>
+          <button
+            type="button"
+            class="install-card__copy"
+            data-install-command={impl.install}
+            data-analytics-event="copy_install_command"
+            data-analytics-param-implementation={impl.id}
+            data-analytics-param-package={impl.packageName}
+            aria-label={`Copy the ${impl.language} install command`}
+          >
+            Copy
+          </button>
+        </div>
+
+        <footer class="install-card__links">
+          <a
+            href={`https://github.com/o3co/${impl.repo}`}
+            data-analytics-param-implementation={impl.id}
+            data-analytics-param-destination="repository"
+          >
+            Source
+          </a>
+          <a
+            href={impl.registry.url}
+            data-analytics-param-implementation={impl.id}
+            data-analytics-param-destination="registry"
+          >
+            {impl.registry.name}
+          </a>
+          {impl.apiDocs && (
+            <a
+              href={impl.apiDocs.url}
+              data-analytics-param-implementation={impl.id}
+              data-analytics-param-destination="api_docs"
+            >
+              {impl.apiDocs.label}
+            </a>
+          )}
+        </footer>
+      </article>
+    ))
+  }
+</div>
+
+<script>
+  document.addEventListener('click', async (event) => {
+    const button = (event.target as Element | null)?.closest<HTMLElement>('[data-install-command]');
+    if (!button) return;
+
+    const command = button.dataset.installCommand ?? '';
+    try {
+      await navigator.clipboard.writeText(command);
+      const original = button.textContent;
+      button.textContent = 'Copied';
+      setTimeout(() => {
+        button.textContent = original;
+      }, 1500);
+    } catch {
+      // Clipboard access is denied in some browsers and over plain http.
+      // The command is visible next to the button, so failing quietly is fine.
+    }
+  });
+</script>
+
+<style>
+  .install-matrix {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr));
+    gap: 1rem;
+    margin-block: 1.5rem;
+  }
+
+  .install-card {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    padding: 1rem;
+    border: 1px solid var(--sl-color-gray-5);
+    border-radius: 0.5rem;
+    background: var(--sl-color-black);
+  }
+
+  .install-card__header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.5rem;
+  }
+
+  .install-card__language {
+    margin: 0;
+    font-size: var(--sl-text-lg);
+    line-height: 1.2;
+  }
+
+  .install-card__requirement {
+    color: var(--sl-color-gray-3);
+    font-size: var(--sl-text-xs);
+    white-space: nowrap;
+  }
+
+  .install-card__note {
+    flex: 1;
+    margin: 0;
+    color: var(--sl-color-gray-2);
+    font-size: var(--sl-text-sm);
+    line-height: 1.5;
+  }
+
+  .install-card__command {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.5rem 0.5rem 0.75rem;
+    border: 1px solid var(--sl-color-gray-5);
+    border-radius: 0.375rem;
+    background: var(--sl-color-gray-6);
+    overflow-x: auto;
+  }
+
+  .install-card__command code {
+    flex: 1;
+    font-size: var(--sl-text-xs);
+    white-space: nowrap;
+  }
+
+  .install-card__copy {
+    flex-shrink: 0;
+    padding: 0.2rem 0.55rem;
+    border: 1px solid var(--sl-color-gray-5);
+    border-radius: 0.25rem;
+    background: var(--sl-color-black);
+    color: var(--sl-color-gray-2);
+    font: inherit;
+    font-size: var(--sl-text-xs);
+    cursor: pointer;
+  }
+
+  .install-card__copy:hover {
+    color: var(--sl-color-white);
+    border-color: var(--sl-color-gray-4);
+  }
+
+  .install-card__links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    font-size: var(--sl-text-xs);
+  }
+</style>
