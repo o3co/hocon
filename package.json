@@ -1,0 +1,33 @@
+{
+  "name": "@o3co/hocon-site",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Docs hub for the o3co HOCON implementations (TypeScript / Go / Rust / Python) and the hocon2 CLI",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/o3co/hocon.git"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "astro dev",
+    "start": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "check": "astro check",
+    "astro": "astro"
+  },
+  "dependencies": {
+    "@astrojs/starlight": "^0.41.5",
+    "astro": "^7.1.6",
+    "sharp": "^0.35.3"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.10",
+    "typescript": "^5.9.2"
+  },
+  "packageManager": "pnpm@11.3.0"
+}

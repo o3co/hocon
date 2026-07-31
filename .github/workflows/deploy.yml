@@ -1,0 +1,66 @@
+name: Deploy site
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  # The site reads minimum language versions and compliance figures out of the
+  # sibling repositories at build time, so a build is also how those numbers
+  # refresh. Without a scheduled rebuild the published page would keep showing
+  # whatever was true at the last push here — and a release in any of the six
+  # sibling repositories can change them without touching this one.
+  schedule:
+    - cron: '17 4 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '24'
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm run check
+
+      - run: pnpm run build
+        env:
+          # A repository variable, not a secret: a measurement ID is public by
+          # nature (it ships in every page), and hiding it would only make the
+          # deployed configuration harder to inspect. Unset — on a fork, or on
+          # a pull request from one — means no analytics code is emitted.
+          PUBLIC_GA_MEASUREMENT_ID: ${{ vars.GA_MEASUREMENT_ID }}
+          PUBLIC_ANALYTICS_CONSENT_BANNER: ${{ vars.ANALYTICS_CONSENT_BANNER }}
+
+      - uses: actions/upload-pages-artifact@v5
+        if: github.event_name != 'pull_request'
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    permissions:
+      pages: write
+      id-token: write
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v5

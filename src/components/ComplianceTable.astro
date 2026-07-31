@@ -1,0 +1,65 @@
+---
+/**
+ * The cross-implementation compliance roll-up, read from xx.hocon at build time.
+ *
+ * Nothing in this table is written down in this repository. It is parsed out of
+ * `docs/compliance-matrix.md` on every build, because the one time these
+ * numbers were transcribed into READMEs they drifted more than fifteen points
+ * before anyone noticed.
+ */
+import { getComplianceTable, COMPLIANCE_MATRIX_URL } from '../data/implementations';
+
+const rows = await getComplianceTable();
+---
+
+{
+  rows.length === 0 ? (
+    <p>
+      <em>
+        Compliance figures are read from the specification corpus at build time and were not
+        available for this build. See <a href={COMPLIANCE_MATRIX_URL}>the compliance matrix</a>.
+      </em>
+    </p>
+  ) : (
+    <table>
+      <thead>
+        <tr>
+          <th>Implementation</th>
+          <th>Spec-total</th>
+          <th>In-scope</th>
+          <th>✅</th>
+          <th>⚠️</th>
+          <th>❌</th>
+          <th>🤷</th>
+          <th>➖</th>
+        </tr>
+      </thead>
+      <tbody>
+        {rows.map((row) => (
+          <tr>
+            <td>
+              <a
+                href={row.detailUrl}
+                data-analytics-param-destination="spec_compliance"
+                data-analytics-param-implementation={row.repo}
+              >
+                {row.repo}
+              </a>
+            </td>
+            <td>
+              <strong>{row.specTotal}</strong>
+            </td>
+            <td>
+              <strong>{row.inScope}</strong>
+            </td>
+            <td>{row.pass}</td>
+            <td>{row.partial}</td>
+            <td>{row.fail}</td>
+            <td>{row.unverified}</td>
+            <td>{row.outOfScope}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  )
+}

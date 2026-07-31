@@ -1,0 +1,94 @@
+---
+title: HOCON, four times over
+description: One HOCON specification, four spec-compliant parsers — TypeScript, Go, Rust and Python — built from a shared conformance corpus.
+template: splash
+hero:
+  tagline: One specification. Four parsers that agree. A shared conformance corpus that keeps them honest.
+  image:
+    file: ../../assets/logo.svg
+  actions:
+    - text: Quick start
+      link: start/quickstart/
+      icon: right-arrow
+    - text: Compliance
+      link: spec/compliance/
+      icon: document
+      variant: minimal
+---
+
+import { Card, CardGrid } from '@astrojs/starlight/components';
+import InstallMatrix from '../../components/InstallMatrix.astro';
+
+Most HOCON libraries are one person's port of the parts of the spec they needed. These four
+are the same parser written four times: the same three-stage pipeline, the same
+[specification][spec], and the same test corpus, with every divergence between them recorded
+rather than discovered later in production.
+
+## Install
+
+<InstallMatrix />
+
+## What you get
+
+<CardGrid>
+  <Card title="Actually the whole language" icon="approve">
+    Substitutions, self-reference, `+=` append, includes, duration and byte-size units,
+    triple-quoted strings, deep merge with last-wins semantics. Not a JSON parser that
+    tolerates comments.
+  </Card>
+  <Card title="Almost no dependencies" icon="seti:config">
+    Python is pure standard library. Go and TypeScript have zero runtime dependencies in the
+    core. Rust has one. Foreign-format adapters are opt-in and never reach the core.
+  </Card>
+  <Card title="Differences on the record" icon="open-book">
+    Where a language forces a hand — surrogate pairs in JavaScript strings, byte-oriented Go
+    strings — the divergence is a numbered item in the shared checklist, not a surprise.
+  </Card>
+  <Card title="Verified against the reference" icon="rocket">
+    Expected values come from Lightbend's own implementation, not from hand-written guesses
+    about what the spec means.
+  </Card>
+</CardGrid>
+
+## Why HOCON at all
+
+HOCON is JSON with the things configuration files actually need. Comments survive. Values
+reference other values. Files include other files. Environment variables layer over defaults
+without a templating step.
+
+```hocon
+# Comments, and no quotes needed for ordinary keys and strings
+app {
+  name = my-service
+  host = "0.0.0.0"
+  port = 8080
+
+  # Substitution — and ${?VAR} falls back silently when unset
+  base-url = "http://"${app.host}":"${app.port}
+  log-level = info
+  log-level = ${?LOG_LEVEL}
+
+  # Units are part of the language, not something you parse yourself
+  timeout = 30s
+  max-upload = 64MiB
+}
+
+# Later files deep-merge over earlier ones
+include "overrides.conf"
+```
+
+[Read the whole format →](start/what-is-hocon/)
+
+## Convert instead of adopting
+
+If the tool consuming your configuration does not speak HOCON, `hocon2` converts in both
+directions — HOCON to JSON, YAML, TOML and Java Properties, and back.
+
+```sh
+go install github.com/o3co/hocon2/cmd/hocon2json@latest
+hocon2json app.conf
+```
+
+[hocon2 →](tools/hocon2/)
+
+[spec]: https://github.com/lightbend/config/blob/main/HOCON.md

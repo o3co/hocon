@@ -1,0 +1,75 @@
+---
+title: Specification compliance
+description: How closely each of the four HOCON parsers follows Lightbend's specification, measured item by item against a shared corpus.
+---
+
+import ComplianceTable from '../../../components/ComplianceTable.astro';
+
+Every clause of Lightbend's [`HOCON.md`](https://github.com/lightbend/config/blob/main/HOCON.md)
+is broken into a numbered **S-item**, and every S-item carries a status for each of the four
+implementations. The checklist is one file, shared, and it is the only place a compliance
+claim is allowed to originate.
+
+<ComplianceTable />
+
+*Read from [xx.hocon's compliance matrix](https://github.com/o3co/xx.hocon/blob/main/docs/compliance-matrix.md)
+when this page was built.*
+
+## Reading the numbers
+
+**Spec-total** divides by every item in the specification, including the ones an implementation
+deliberately does not support. It answers "how much of HOCON does this handle?" and is
+intentionally dragged down by out-of-scope items.
+
+**In-scope** uses a per-implementation denominator that drops that implementation's
+out-of-scope items. It answers "of what this implementation undertakes, how much is covered?"
+
+The denominator is per-implementation because a port can be out of scope for reasons its
+siblings do not share. TypeScript excludes the item about decoding input bytes because
+JavaScript strings arrive already decoded at the I/O boundary; Go cannot make that exclusion,
+because a Go `string` is arbitrary bytes.
+
+Both numbers are published side by side so that neither over-claims nor under-claims. Picking
+whichever one flatters a given implementation would defeat the point of keeping the matrix.
+
+## What the statuses mean
+
+| Glyph | Meaning |
+| --- | --- |
+| ✅ | A test exists and passes |
+| ⚠️ | A test exists and partially passes, or pins a known deviation from the specification |
+| ❌ | A test exists and fails, or the source documents a known violation |
+| 🤷 | No test — an implementation claim only, unverified |
+| ➖ | Out of scope, with a required rationale |
+
+`🤷` counts as zero, not as a pass. An unverified claim is not evidence, and moving an item to
+`✅` or `❌` requires writing the test that decides it.
+
+## Where the expected values come from
+
+Fixtures and expected values live in [xx.hocon](https://github.com/o3co/xx.hocon) and are
+generated from Lightbend's own implementation. Hand-written expectations are refused on
+principle: a hand-written expectation encodes what someone believed the specification says,
+and the entire purpose of the corpus is to catch the cases where that belief is wrong.
+
+Some items are out of scope for all four by policy rather than by omission — classpath
+resources are a JVM concept, MIME types are set by HTTP servers rather than parsers, and so on.
+Each carries its reasoning in the matrix.
+
+## Behaviour the specification does not define
+
+The specification is silent in places where four independent parsers could each pick something
+reasonable and still disagree. Those are pinned separately, as **E-items** in
+[`extra-spec-conventions.md`](https://github.com/o3co/xx.hocon/blob/main/docs/extra-spec-conventions.md),
+and foreign-format ingestion is pinned as **F-items** in
+[`format-ingestion-mapping.md`](https://github.com/o3co/xx.hocon/blob/main/docs/format-ingestion-mapping.md).
+
+Neither counts toward the compliance percentages. They are agreements this project made, not
+specification conformance, and folding them into the numerator would be inventing credit for
+homework it set itself.
+
+## Full detail
+
+- [Compliance matrix](https://github.com/o3co/xx.hocon/blob/main/docs/compliance-matrix.md) — the cross-implementation roll-up
+- [Specification checklist](https://github.com/o3co/xx.hocon/blob/main/docs/spec-checklist.md) — every S-item, with the clause it derives from
+- Per-implementation detail: [ts](https://github.com/o3co/ts.hocon/blob/develop/docs/spec-compliance.md) · [go](https://github.com/o3co/go.hocon/blob/develop/docs/spec-compliance.md) · [rs](https://github.com/o3co/rs.hocon/blob/develop/docs/spec-compliance.md) · [py](https://github.com/o3co/py.hocon/blob/main/docs/spec-compliance.md)

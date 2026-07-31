@@ -1,0 +1,8 @@
+packages:
+  - '.'
+
+# Astro's bundler (esbuild) and Starlight's image pipeline (sharp) both need
+# their postinstall to run; pnpm 11 blocks build scripts unless named here.
+allowBuilds:
+  esbuild: true
+  sharp: true

@@ -1,0 +1,80 @@
+---
+title: hocon2 CLI
+description: Convert HOCON to JSON, YAML, TOML and Java Properties from the command line — and back again.
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+`hocon2` is for when the tool consuming your configuration cannot be changed. Author in HOCON,
+convert at build or deploy time, hand the result to something that only speaks JSON, YAML,
+TOML or Java `.properties`. It is built on [go.hocon](https://github.com/o3co/go.hocon), so the
+conversion is the same parser the library uses.
+
+## Install
+
+```sh
+go install github.com/o3co/hocon2/cmd/hocon2json@latest
+go install github.com/o3co/hocon2/cmd/hocon2yaml@latest
+go install github.com/o3co/hocon2/cmd/hocon2toml@latest
+go install github.com/o3co/hocon2/cmd/hocon2properties@latest
+```
+
+Pre-built binaries for Linux, macOS and Windows on amd64 and arm64 are attached to
+[each release](https://github.com/o3co/hocon2/releases/latest).
+
+## Use
+
+```sh
+# A file
+hocon2json app.conf
+
+# Or a pipe
+cat app.conf | hocon2yaml
+
+# Write somewhere, without clobbering by accident
+hocon2json -o output.json app.conf
+hocon2json -o output.json -overwrite app.conf
+
+# Formatting
+hocon2json -compact app.conf
+hocon2json -indent 4 app.conf
+```
+
+Each command is a separate binary rather than a subcommand, which keeps them composable in a
+`Makefile` or a CI step without a wrapper.
+
+## Both directions
+
+| To another format | From another format |
+| --- | --- |
+| `hocon2json` | `json2hocon` |
+| `hocon2yaml` | `yaml2hocon` |
+| `hocon2toml` | `toml2hocon` |
+| `hocon2properties` | `properties2hocon` |
+
+The reverse commands read a foreign file, build a value tree and render idiomatic HOCON — the
+migration path for a repository that already has a hundred YAML files.
+
+Foreign data stays data on the way in. A `${...}` in an input value is emitted literally rather
+than becoming a substitution, and types survive the round trip: a Properties value or a JSON
+string `"8080"` is quoted on output so it re-parses as a string and not as a number.
+
+<Aside type="caution" title="YAML scalars">
+Whether a bare `010` reads as `8` or `10` is the YAML library's decision, not a guarantee of
+this tool. Quote anything that must survive verbatim.
+</Aside>
+
+## In CI
+
+`-validate` parses without emitting, so a malformed configuration fails the build rather than
+the deployment:
+
+```sh
+hocon2json -validate config/prod.conf
+```
+
+## Reading further
+
+- [hocon2 on GitHub](https://github.com/o3co/hocon2) — full flag reference
+- [go.hocon](https://github.com/o3co/go.hocon) — the parser underneath
+- [Format adapters](../../implementations/adapters/) — the same conversions, in-process, from any of the four languages

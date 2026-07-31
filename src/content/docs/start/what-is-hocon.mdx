@@ -1,0 +1,127 @@
+---
+title: What is HOCON?
+description: A tour of the format — what HOCON adds to JSON, and which of those additions tend to surprise people.
+sidebar:
+  order: 1
+---
+
+HOCON (Human-Optimized Config Object Notation) is a superset of JSON designed by Lightbend for
+configuration files. Every valid JSON document is a valid HOCON document, so adopting it never
+invalidates what you already have. The specification lives in
+[`HOCON.md`](https://github.com/lightbend/config/blob/main/HOCON.md) and is the sole reference
+these implementations are measured against.
+
+## What it adds
+
+### Comments, and fewer punctuation rules
+
+```hocon
+// Both comment styles work
+# so do these
+
+app {
+  name = my-service   // '=' or ':' — both are assignment
+  port = 8080         // no trailing comma required
+  tags = [a, b, c]    // and unquoted strings are ordinary values
+}
+```
+
+Keys and string values do not need quotes unless they contain characters that would otherwise
+be syntax. Quoting is still available and still means exactly what it means in JSON.
+
+### Substitution
+
+A value can reference another value, anywhere in the document, resolved after the whole
+document is parsed. Forward references work.
+
+```hocon
+host = "localhost"
+port = 8080
+base-url = "http://"${host}":"${port}   // "http://localhost:8080"
+```
+
+`${?name}` is the optional form. If the path does not resolve, the assignment simply does not
+happen — which is what makes environment overrides work without a templating layer:
+
+```hocon
+log-level = info
+log-level = ${?LOG_LEVEL}   // stays "info" when LOG_LEVEL is unset
+```
+
+### Merging, and self-reference
+
+Objects deep-merge. When the same key appears twice, the later one wins for scalars and merges
+for objects.
+
+```hocon
+server { host = localhost, port = 8080 }
+server { port = 9090 }
+// server = { host: "localhost", port: 9090 }
+```
+
+A key may refer to its own previous value, which is how you append to a list without repeating
+it:
+
+```hocon
+path = [/usr/bin]
+path = ${path} [/usr/local/bin]
+
+// += is shorthand for appending one element
+extras = [a]
+extras += b
+```
+
+### Includes
+
+```hocon
+include "defaults.conf"
+include required(file("secrets.conf"))
+include url("https://example.com/shared.conf")
+```
+
+Included documents merge into the point where they appear, so an include at the top provides
+defaults and one at the bottom overrides.
+
+### Units
+
+Durations and byte sizes are part of the language, so the parser hands you a number and not a
+string to interpret yourself.
+
+```hocon
+timeout = 30s          // also: ms, minutes, h, d
+retry-delay = 500ms
+max-upload = 64MiB     // and K, KB, KiB, M, MB, MiB, G, ...
+```
+
+### Multi-line strings
+
+```hocon
+query = """
+  SELECT *
+  FROM users
+  WHERE active = true
+"""
+```
+
+## What tends to surprise people
+
+**Concatenation is real.** `a = foo bar` is the single string `"foo bar"`, not an error. Two
+adjacent arrays concatenate; two adjacent objects merge. This is what makes
+`"http://"${host}` work, and it is also why an accidental space in a value is not always a
+syntax error.
+
+**Whitespace inside unquoted values is preserved between tokens but trimmed at the edges.**
+When in doubt, quote.
+
+**Duplicate keys are a feature.** No implementation will warn you that you set `port` twice —
+setting it twice is how overriding works.
+
+**Resolution happens after parsing.** A substitution that cannot be resolved is an error at
+resolve time, not at parse time, and the error names the path that failed rather than a line
+number in the middle of a merge.
+
+## Where to go next
+
+The [quick start](../quickstart/) has the first program in each of the four languages. The
+[compliance page](../../spec/compliance/) records exactly which parts of the specification each
+implementation covers, item by item.

@@ -1,0 +1,135 @@
+---
+/**
+ * Opt-in bar for analytics storage.
+ *
+ * Kept as a bar rather than a modal on purpose: the site is already lawful in
+ * its default state (Consent Mode starts denied, so nothing is stored), and
+ * this only asks for the extra data. Blocking the page to ask for something
+ * optional would be the wrong trade on a documentation site.
+ */
+const enabled =
+  Boolean(import.meta.env.PUBLIC_GA_MEASUREMENT_ID) &&
+  import.meta.env.PUBLIC_ANALYTICS_CONSENT_BANNER !== 'false';
+---
+
+{
+  enabled && (
+    <aside id="consent-banner" class="consent-banner" hidden aria-label="Analytics consent">
+      <p class="consent-banner__text">
+        We count page visits to see which of the four implementations people are looking for.
+        Allowing analytics storage lets us tell repeat visits apart; declining keeps the count
+        cookieless.
+      </p>
+      <div class="consent-banner__actions">
+        <button type="button" data-consent="denied" class="consent-banner__button">
+          Decline
+        </button>
+        <button
+          type="button"
+          data-consent="granted"
+          class="consent-banner__button consent-banner__button--primary"
+        >
+          Allow
+        </button>
+      </div>
+    </aside>
+  )
+}
+
+<script>
+  const STORAGE_KEY = 'hocon-site:analytics-consent';
+
+  const banner = document.getElementById('consent-banner');
+  if (banner) {
+    let stored: string | null = null;
+    try {
+      stored = localStorage.getItem(STORAGE_KEY);
+    } catch {
+      // No storage means no way to remember a choice, so there is no point
+      // asking for one. Staying denied and silent is the honest outcome.
+      stored = 'denied';
+    }
+
+    if (stored !== 'granted' && stored !== 'denied') {
+      banner.hidden = false;
+    }
+
+    banner.addEventListener('click', (event) => {
+      const button = (event.target as Element | null)?.closest<HTMLElement>('[data-consent]');
+      if (!button) return;
+
+      const choice = button.dataset.consent === 'granted' ? 'granted' : 'denied';
+      try {
+        localStorage.setItem(STORAGE_KEY, choice);
+      } catch {
+        // Choice still applies for this page load even if it cannot persist.
+      }
+
+      const gtag = (window as any).gtag;
+      if (typeof gtag === 'function') {
+        gtag('consent', 'update', { analytics_storage: choice });
+      }
+      banner.hidden = true;
+    });
+  }
+</script>
+
+<style>
+  .consent-banner {
+    position: fixed;
+    inset-inline: 0;
+    inset-block-end: 0;
+    z-index: 100;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    align-items: center;
+    justify-content: center;
+    padding: 0.75rem 1rem;
+    border-block-start: 1px solid var(--sl-color-gray-5);
+    background: var(--sl-color-black);
+    color: var(--sl-color-gray-2);
+    font-size: var(--sl-text-xs);
+  }
+
+  .consent-banner[hidden] {
+    display: none;
+  }
+
+  .consent-banner__text {
+    max-width: 62ch;
+    margin: 0;
+    line-height: 1.5;
+  }
+
+  .consent-banner__actions {
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  .consent-banner__button {
+    padding: 0.35rem 0.9rem;
+    border: 1px solid var(--sl-color-gray-5);
+    border-radius: 0.25rem;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    cursor: pointer;
+  }
+
+  .consent-banner__button:hover {
+    border-color: var(--sl-color-gray-4);
+    background: var(--sl-color-gray-6);
+  }
+
+  .consent-banner__button--primary {
+    border-color: var(--sl-color-accent);
+    background: var(--sl-color-accent);
+    color: var(--sl-color-white);
+  }
+
+  .consent-banner__button--primary:hover {
+    background: var(--sl-color-accent-high);
+    border-color: var(--sl-color-accent-high);
+  }
+</style>

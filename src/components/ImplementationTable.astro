@@ -1,0 +1,59 @@
+---
+/**
+ * Side-by-side comparison of the four ports.
+ *
+ * The minimum-version column is read from each repository's manifest during the
+ * build. The other columns describe architecture, which changes on a different
+ * timescale and lives in `implementations.ts`.
+ */
+import { getImplementationFacts } from '../data/implementations';
+
+const implementations = await getImplementationFacts();
+
+/** How each language keeps foreign-format support out of the core. */
+const ADAPTER_MECHANISM: Record<string, string> = {
+  typescript: 'Subpath exports with optional peer dependencies',
+  go: 'A nested module, so the core keeps its own go.mod clean',
+  rust: 'Cargo features (`adapters-*`), off by default',
+  python: 'Submodules with extras (`hocon-parser[yaml]`)',
+};
+---
+
+<table>
+  <thead>
+    <tr>
+      <th>Language</th>
+      <th>Package</th>
+      <th>Requires</th>
+      <th>Foreign formats</th>
+    </tr>
+  </thead>
+  <tbody>
+    {
+      implementations.map((impl) => (
+        <tr>
+          <td>
+            <a
+              href={`https://github.com/o3co/${impl.repo}`}
+              data-analytics-param-implementation={impl.id}
+              data-analytics-param-destination="repository"
+            >
+              {impl.language}
+            </a>
+          </td>
+          <td>
+            <a
+              href={impl.registry.url}
+              data-analytics-param-implementation={impl.id}
+              data-analytics-param-destination="registry"
+            >
+              <code>{impl.packageName}</code>
+            </a>
+          </td>
+          <td>{impl.minimumVersion}</td>
+          <td>{ADAPTER_MECHANISM[impl.id]}</td>
+        </tr>
+      ))
+    }
+  </tbody>
+</table>

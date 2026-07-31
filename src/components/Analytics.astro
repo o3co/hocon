@@ -1,0 +1,142 @@
+---
+/**
+ * Google Analytics 4, wired for a public documentation site.
+ *
+ * Three things are deliberate here:
+ *
+ * 1. The measurement ID comes from the environment, never from source. A fork
+ *    or a local build with no ID emits no analytics code at all, so nobody's
+ *    traffic lands in someone else's property by accident.
+ *
+ * 2. Consent Mode v2 starts in the denied state. Until a visitor opts in, GA4
+ *    sends cookieless pings — enough to count pages, not enough to need a
+ *    cookie. That keeps the default state lawful in the EU without a modal.
+ *
+ * 3. Events are declared in markup (`data-analytics-event`), not wired up
+ *    per component. What we actually want to learn is which of the four
+ *    implementations people reach for, and that signal is spread across tabs,
+ *    copy buttons and outbound links on every page.
+ *
+ * Note that GA4 undercounts a developer audience — a meaningful share of these
+ * visitors block googletagmanager.com outright, and the blocking rate is not
+ * uniform across language communities. Read the implementation split as a
+ * lower bound with a lean, not as a measurement. Registry download counts
+ * (npm, crates.io, PyPI, pkg.go.dev) are the honest adoption number.
+ */
+const measurementId = import.meta.env.PUBLIC_GA_MEASUREMENT_ID;
+
+// Opt-in banner. Without it the site still counts pageviews (cookielessly);
+// with it, visitors who accept also produce session- and user-scoped metrics.
+const showConsentBanner = import.meta.env.PUBLIC_ANALYTICS_CONSENT_BANNER !== 'false';
+
+const enabled = Boolean(measurementId);
+---
+
+{
+  enabled && (
+    <>
+      <script
+        is:inline
+        define:vars={{ measurementId, showConsentBanner, storageKey: 'hocon-site:analytics-consent' }}
+      >
+        window.dataLayer = window.dataLayer || [];
+        function gtag() {
+          window.dataLayer.push(arguments);
+        }
+        window.gtag = gtag;
+
+        // Deny everything up front. This runs before gtag.js loads, which is
+        // what makes it a *default* rather than a correction after the fact.
+        gtag('consent', 'default', {
+          ad_storage: 'denied',
+          ad_user_data: 'denied',
+          ad_personalization: 'denied',
+          analytics_storage: 'denied',
+          wait_for_update: 500,
+        });
+
+        // A returning visitor who already accepted gets their choice restored
+        // before the first hit, so the opening pageview is not lost.
+        try {
+          if (!showConsentBanner || localStorage.getItem(storageKey) === 'granted') {
+            gtag('consent', 'update', { analytics_storage: 'granted' });
+          }
+        } catch {
+          // Storage can throw in private modes or with third-party cookies
+          // blocked. Staying denied is the safe branch.
+        }
+
+        gtag('js', new Date());
+        gtag('config', measurementId);
+      </script>
+      <script is:inline async src={`https://www.googletagmanager.com/gtag/js?id=${measurementId}`} />
+
+      <script>
+        // Declarative event tracking.
+        //
+        // Any element carrying `data-analytics-event` reports that event when
+        // clicked, with every `data-analytics-param-<name>` attribute passed
+        // through as a parameter. Components stay free of analytics wiring and
+        // adding a tracked control is a markup change.
+        type Params = Record<string, string>;
+
+        function track(event: string, params: Params = {}): void {
+          const push = (window as any).gtag;
+          if (typeof push !== 'function') return;
+          push('event', event, params);
+        }
+
+        function paramsFrom(el: HTMLElement): Params {
+          const params: Params = {};
+          for (const { name, value } of Array.from(el.attributes)) {
+            if (!name.startsWith('data-analytics-param-')) continue;
+            params[name.slice('data-analytics-param-'.length).replace(/-/g, '_')] = value;
+          }
+          return params;
+        }
+
+        document.addEventListener('click', (event) => {
+          const target = event.target;
+          if (!(target instanceof Element)) return;
+
+          const declared = target.closest<HTMLElement>('[data-analytics-event]');
+          if (declared) {
+            track(declared.dataset.analyticsEvent!, paramsFrom(declared));
+          }
+
+          // Outbound links carry the other half of the signal: which registry,
+          // repository or reference a visitor actually leaves for.
+          const link = target.closest('a');
+          if (link instanceof HTMLAnchorElement && link.href) {
+            let url: URL;
+            try {
+              url = new URL(link.href, location.href);
+            } catch {
+              return;
+            }
+            if (url.host === location.host || !url.protocol.startsWith('http')) return;
+            track('outbound_click', {
+              link_url: url.href,
+              link_domain: url.host,
+              link_text: (link.textContent ?? '').trim().slice(0, 100),
+              ...paramsFrom(link),
+            });
+          }
+        });
+
+        // Starlight's tabs are shared across the site with a sync key, so a
+        // tab change is a language preference, not just a UI event.
+        document.addEventListener('click', (event) => {
+          const target = event.target;
+          if (!(target instanceof Element)) return;
+          const tab = target.closest('starlight-tabs [role="tab"]');
+          if (!tab) return;
+          track('select_implementation', {
+            implementation: (tab.textContent ?? '').trim().toLowerCase(),
+            source: 'starlight_tabs',
+          });
+        });
+      </script>
+    </>
+  )
+}
