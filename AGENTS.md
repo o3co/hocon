@@ -77,7 +77,7 @@ measure it. Adoption is a registry-download question, and that data is not here.
 ## Search Console
 
 The ownership token comes from `PUBLIC_GOOGLE_SITE_VERIFICATION` (CI: repository variable
-`GOOGLE_SITE_VERIFICATION`), emitted by
+`GOOGLE_SITE_VERIFICATION`) — the `content` value only, not the whole `<meta>` tag — emitted by
 [`src/components/SiteVerification.astro`](src/components/SiteVerification.astro). Same rule as the
 measurement ID: never hardcode it. Do not remove it once verified — Search Console re-checks and
 drops ownership when the tag is gone.
