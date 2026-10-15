@@ -5,6 +5,8 @@ sidebar:
   order: 1
 ---
 
+import { Tabs, TabItem } from '@astrojs/starlight/components';
+
 HOCON (Human-Optimized Config Object Notation) is a superset of JSON designed by Lightbend for
 configuration files. A JSON document whose root is an object or an array is also a valid HOCON
 document, so adopting it does not invalidate the configuration files you already have. (A bare
@@ -106,6 +108,153 @@ query = """
   WHERE active = true
 """
 ```
+
+## Configuration that stays inside its module
+
+In a large codebase, configuration tends to leak: one big file that every team edits, defaults
+copied into each service, and modules that read each other's keys. HOCON lets each module own
+its configuration the way it owns its code.
+
+- **Each module owns a namespace and ships its own defaults.** The `auth` module keeps
+  `auth { … }` next to its code, with every default filled in. The application never copies
+  those defaults; it brings them in with one `include`.
+- **The application overrides only what differs.** Later layers deep-merge over earlier ones,
+  so the application states two keys, not the whole block.
+- **Each module reads only its own subtree, through its own schema.** The module asks for
+  `auth` and validates it against the schema it defines. The shape of that section is the
+  module's contract; nothing else in the file is visible to it.
+- **Wiring between modules lives in the application.** A module that needs a database says so
+  with an optional substitution (`${?shared.db}`). The application decides where that value
+  comes from. Modules never reference each other, so dependencies run one way.
+
+```hocon
+# auth/reference.conf: shipped inside the auth package, owned by the auth team
+auth {
+  session { lifetime = 30m, max-body = 64KiB }
+  db = ${?shared.db}
+}
+```
+
+```hocon
+# application.conf: owned by the application
+include package("github.com/acme/auth", "reference.conf")
+
+shared.db { host = db.internal, port = 5432 }
+auth.session.lifetime = 2h   # override what differs; the rest stays the module's default
+```
+
+Inside the module, the read is one call against one path, and the units arrive as numbers:
+
+<Tabs syncKey="implementation">
+<TabItem label="TypeScript">
+
+```ts
+import { getValidated, hocon } from '@o3co/ts.hocon/zod'
+import type { Config } from '@o3co/ts.hocon'
+import { z } from 'zod'
+
+const Auth = z.object({
+  session: z.object({
+    lifetime: hocon.duration('s').pipe(z.number().int().positive()),
+    'max-body': hocon.bytes().pipe(z.number().int().positive()),
+  }),
+  db: z.object({ host: z.string(), port: z.number().int() }),
+})
+
+export const loadAuth = (config: Config) => getValidated(config, 'auth', Auth)
+```
+
+</TabItem>
+<TabItem label="Go">
+
+```go
+type Config struct {
+	Session struct {
+		Lifetime time.Duration  `hocon:"lifetime"`
+		MaxBody  hocon.ByteSize `hocon:"max-body"`
+	} `hocon:"session"`
+	DB struct {
+		Host string `hocon:"host"`
+		Port int    `hocon:"port"`
+	} `hocon:"db"`
+}
+
+func Load(cfg *hocon.Config) (Config, error) {
+	var c Config
+	auth, err := cfg.GetConfigE("auth")
+	if err != nil {
+		return c, err
+	}
+	err = auth.Unmarshal(&c)
+	return c, err
+}
+```
+
+</TabItem>
+<TabItem label="Rust">
+
+```rust
+use serde::Deserialize;
+use std::time::Duration;
+
+#[derive(Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub struct Session {
+    #[serde(with = "hocon::serde::duration")]
+    pub lifetime: Duration,
+    #[serde(with = "hocon::serde::bytes")]
+    pub max_body: u64,
+}
+
+#[derive(Deserialize)]
+pub struct Db { pub host: String, pub port: u16 }
+
+#[derive(Deserialize)]
+pub struct Auth { pub session: Session, pub db: Db }
+
+pub fn load(cfg: &hocon::Config) -> Result<Auth, hocon::ConfigError> {
+    cfg.get_as::<Auth>("auth")
+}
+```
+
+</TabItem>
+<TabItem label="Python">
+
+```python
+from dataclasses import dataclass
+from typing import Annotated
+
+import hocon
+
+@dataclass
+class Session:
+    lifetime: Annotated[int, hocon.Duration("s")]
+    max_body: Annotated[int, hocon.Bytes()]   # reads max-body
+
+@dataclass
+class Db:
+    host: str
+    port: int
+
+@dataclass
+class Auth:
+    session: Session
+    db: Db
+
+def load(config: hocon.Config) -> Auth:
+    return config.decode(Auth, "auth")
+```
+
+</TabItem>
+</Tabs>
+
+`include package(...)` is how a module publishes its defaults without the application knowing
+where its files live. How a package's file is found is per language — see
+[ts.hocon](https://o3co.github.io/ts.hocon/) (`packageResolver`),
+[go.hocon](https://pkg.go.dev/github.com/o3co/go.hocon#RegisterPackage) (`RegisterPackage`),
+[rs.hocon](https://docs.rs/hocon-parser/latest/hocon/struct.Parser.html) (`Parser::register_package`)
+and [py.hocon](https://github.com/o3co/py.hocon#parse-functions) (`resolve_from` /
+`package_resolver`). On the JVM, Lightbend's `reference.conf` convention plays the same role.
 
 ## What tends to surprise people
 

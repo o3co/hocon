@@ -77,6 +77,12 @@ app {
 include "overrides.conf"
 ```
 
+In a large codebase, the same features let each module own its configuration. A module ships
+its own defaults under its own key, the application includes them and overrides only what
+differs, and each module reads and validates only its own subtree. Wiring between modules stays
+in the application, so no module reaches into another's keys —
+[configuration that stays inside its module →](start/what-is-hocon/#configuration-that-stays-inside-its-module)
+
 [Read the whole format →](start/what-is-hocon/)
 
 ## Convert instead of adopting
