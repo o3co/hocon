@@ -74,6 +74,14 @@ Treat the implementation split as a lower bound with a lean. This audience block
 heavily and unevenly across language communities, so the numbers rank interest, they do not
 measure it. Adoption is a registry-download question, and that data is not here.
 
+## Search Console
+
+The ownership token comes from `PUBLIC_GOOGLE_SITE_VERIFICATION` (CI: repository variable
+`GOOGLE_SITE_VERIFICATION`), emitted by
+[`src/components/SiteVerification.astro`](src/components/SiteVerification.astro). Same rule as the
+measurement ID: never hardcode it. Do not remove it once verified — Search Console re-checks and
+drops ownership when the tag is gone.
+
 ## PR workflow
 
 `multi-agent-review` → PR → `github-pr-review`. Resolve every review thread before merge.
