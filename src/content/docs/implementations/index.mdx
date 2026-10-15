@@ -40,7 +40,7 @@ foreign-format adapter is opt-in in all four, so nothing reaches the core.
 
 **Language-forced divergence.** A few differences are not choices. JavaScript strings are
 UTF-16 and can hold an unpaired surrogate (a lone `\uD800` escape), so the TypeScript port
-accepts one where Go, Rust and Python refuse it. Go strings are arbitrary bytes where
+accepts one, as does Python (whose strings keep lone surrogates), while Go and Rust refuse it. Go strings are arbitrary bytes where
 JavaScript strings arrive already decoded. Both are numbered checklist items with the reasoning
 attached, rather than smoothed over: the surrogate item is out of scope for all four, because no
 single answer fits every language's strings, and input decoding is out of scope only where the
