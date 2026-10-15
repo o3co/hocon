@@ -123,15 +123,16 @@ its configuration the way it owns its code.
 - **Each module reads only its own subtree, through its own schema.** The module asks for
   `auth` and validates it against the schema it defines. The shape of that section is the
   module's contract; nothing else in the file is visible to it.
-- **Wiring between modules lives in the application.** A module that needs a database says so
-  with an optional substitution (`${?shared.db}`). The application decides where that value
-  comes from. Modules never reference each other, so dependencies run one way.
+- **Wiring between modules lives in the application.** The module only declares the keys it
+  reads (`auth.db`) and leaves them without a default when the application must supply them.
+  The application connects them to shared values (`auth.db = ${shared.db}`). Modules never
+  reference each other or the application's keys, so dependencies run one way.
 
 ```hocon
 # auth/reference.conf: shipped inside the auth package, owned by the auth team
 auth {
   session { lifetime = 30m, max-body = 64KiB }
-  db = ${?shared.db}
+  # db: no default; the application supplies auth.db
 }
 ```
 
@@ -140,10 +141,13 @@ auth {
 include package("github.com/acme/auth", "reference.conf")
 
 shared.db { host = db.internal, port = 5432 }
+auth.db = ${shared.db}       # wiring lives in the application
 auth.session.lifetime = 2h   # override what differs; the rest stays the module's default
 ```
 
-Inside the module, the read is one call against one path, and the units arrive as numbers:
+Inside the module, the read is one call against one path, and the units arrive as typed values.
+If the application leaves `auth.db` unwired, that call fails and names the missing `db`, instead
+of handing the module a half-filled section:
 
 <Tabs syncKey="implementation">
 <TabItem label="TypeScript">
@@ -155,8 +159,8 @@ import { z } from 'zod'
 
 const Auth = z.object({
   session: z.object({
-    lifetime: hocon.duration('s').pipe(z.number().int().positive()),
-    'max-body': hocon.bytes().pipe(z.number().int().positive()),
+    lifetime: hocon.duration('s').pipe(z.number().int().positive()), // "2h" → 7200
+    'max-body': hocon.bytes().pipe(z.number().int().positive()),     // "64KiB" → 65536
   }),
   db: z.object({ host: z.string(), port: z.number().int() }),
 })
@@ -164,29 +168,37 @@ const Auth = z.object({
 export const loadAuth = (config: Config) => getValidated(config, 'auth', Auth)
 ```
 
+`zod` is an optional peer dependency of `@o3co/ts.hocon`; install it next to it to use the
+`@o3co/ts.hocon/zod` entry point. ts.hocon's default package resolver hands the identifier to
+Node module resolution, so there it is an npm package name such as `@acme/auth`; a Go-style
+identifier such as `github.com/acme/auth` needs a `packageResolver` that maps it to the package.
+
 </TabItem>
 <TabItem label="Go">
 
 ```go
-type Config struct {
+// Auth is the module's contract: the shape of the auth section.
+type Auth struct {
 	Session struct {
-		Lifetime time.Duration  `hocon:"lifetime"`
-		MaxBody  hocon.ByteSize `hocon:"max-body"`
+		Lifetime time.Duration  `hocon:"lifetime"` // "2h"
+		MaxBody  hocon.ByteSize `hocon:"max-body"` // "64KiB" → 65536
 	} `hocon:"session"`
 	DB struct {
 		Host string `hocon:"host"`
 		Port int    `hocon:"port"`
-	} `hocon:"db"`
+	} `hocon:"db"` // no default: the application must supply auth.db
 }
 
-func Load(cfg *hocon.Config) (Config, error) {
-	var c Config
-	auth, err := cfg.GetConfigE("auth")
-	if err != nil {
-		return c, err
+// Load reads the auth subtree and nothing else.
+func Load(root *hocon.Config) (Auth, error) {
+	var auth Auth
+	if err := root.UnmarshalPath("auth", &auth); err != nil {
+		return auth, err
 	}
-	err = auth.Unmarshal(&c)
-	return c, err
+	if auth.Session.Lifetime <= 0 {
+		return auth, fmt.Errorf("auth.session.lifetime must be positive, got %v", auth.Session.Lifetime)
+	}
+	return auth, nil
 }
 ```
 
@@ -201,9 +213,9 @@ use std::time::Duration;
 #[serde(rename_all = "kebab-case")]
 pub struct Session {
     #[serde(with = "hocon::serde::duration")]
-    pub lifetime: Duration,
+    pub lifetime: Duration,      // "2h"
     #[serde(with = "hocon::serde::bytes")]
-    pub max_body: u64,
+    pub max_body: u64,           // "64KiB" → 65536
 }
 
 #[derive(Deserialize)]
@@ -212,10 +224,13 @@ pub struct Db { pub host: String, pub port: u16 }
 #[derive(Deserialize)]
 pub struct Auth { pub session: Session, pub db: Db }
 
-pub fn load(cfg: &hocon::Config) -> Result<Auth, hocon::ConfigError> {
-    cfg.get_as::<Auth>("auth")
+pub fn load(config: &hocon::Config) -> Result<Auth, hocon::ConfigError> {
+    config.get_as::<Auth>("auth")
 }
 ```
+
+This needs the crate's `serde` and `include-package` features
+(`cargo add hocon-parser --features serde,include-package`).
 
 </TabItem>
 <TabItem label="Python">
@@ -228,8 +243,8 @@ import hocon
 
 @dataclass
 class Session:
-    lifetime: Annotated[int, hocon.Duration("s")]
-    max_body: Annotated[int, hocon.Bytes()]   # reads max-body
+    lifetime: Annotated[int, hocon.Duration("s")]  # "2h" → 7200
+    max_body: Annotated[int, hocon.Bytes()]        # reads max-body; "64KiB" → 65536
 
 @dataclass
 class Db:
@@ -239,20 +254,22 @@ class Db:
 @dataclass
 class Auth:
     session: Session
-    db: Db
+    db: Db  # no default: the application must supply auth.db
 
-def load(config: hocon.Config) -> Auth:
+def load_auth(config: hocon.Config) -> Auth:
     return config.decode(Auth, "auth")
 ```
 
 </TabItem>
 </Tabs>
 
-`include package(...)` is how a module publishes its defaults without the application knowing
-where its files live. How a package's file is found is per language — see
-[ts.hocon](https://o3co.github.io/ts.hocon/) (`packageResolver`),
-[go.hocon](https://pkg.go.dev/github.com/o3co/go.hocon#RegisterPackage) (`RegisterPackage`),
-[rs.hocon](https://docs.rs/hocon-parser/latest/hocon/struct.Parser.html) (`Parser::register_package`)
+`include package(...)` is not part of HOCON.md: it is a convention shared by the o3co
+implementations ([E11](https://github.com/o3co/xx.hocon/blob/main/docs/extra-spec-conventions.md#e11)),
+a non-JVM counterpart to `include classpath(...)`. It is how a module publishes its defaults
+without the application knowing where its files live. How a package's file is found is per
+language — see [ts.hocon](https://github.com/o3co/ts.hocon#parse-functions) (`packageResolver`),
+[go.hocon](https://github.com/o3co/go.hocon#package-includes-include-package) (`RegisterPackage`),
+[rs.hocon](https://github.com/o3co/rs.hocon#package-includes-include-package) (`Parser::register_package`)
 and [py.hocon](https://github.com/o3co/py.hocon#parse-functions) (`resolve_from` /
 `package_resolver`). On the JVM, Lightbend's `reference.conf` convention plays the same role.
 
