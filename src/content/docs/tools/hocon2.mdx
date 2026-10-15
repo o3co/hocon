@@ -4,6 +4,7 @@ description: Convert HOCON to JSON, YAML, TOML and Java Properties from the comm
 ---
 
 import { Aside } from '@astrojs/starlight/components';
+import Hocon2Requires from '../../../components/Hocon2Requires.astro';
 
 `hocon2` is for when the tool consuming your configuration cannot be changed. Author in HOCON,
 convert at build or deploy time, hand the result to something that only speaks JSON, YAML,
@@ -17,7 +18,17 @@ go install github.com/o3co/hocon2/cmd/hocon2json@latest
 go install github.com/o3co/hocon2/cmd/hocon2yaml@latest
 go install github.com/o3co/hocon2/cmd/hocon2toml@latest
 go install github.com/o3co/hocon2/cmd/hocon2properties@latest
+
+# The reverse direction
+go install github.com/o3co/hocon2/cmd/json2hocon@latest
+go install github.com/o3co/hocon2/cmd/yaml2hocon@latest
+go install github.com/o3co/hocon2/cmd/toml2hocon@latest
+go install github.com/o3co/hocon2/cmd/properties2hocon@latest
 ```
+
+`go install` needs <Hocon2Requires /> (read from hocon2's
+[`go.mod`](https://github.com/o3co/hocon2/blob/develop/go.mod) when this page was built), which
+can be newer than what go.hocon itself requires.
 
 Pre-built binaries for Linux, macOS and Windows on amd64 and arm64 are attached to
 [each release](https://github.com/o3co/hocon2/releases/latest).

@@ -8,9 +8,11 @@ on:
   # sibling repositories at build time, so a build is also how those numbers
   # refresh. Without a scheduled rebuild the published page would keep showing
   # whatever was true at the last push here — and a release in any of the six
-  # sibling repositories can change them without touching this one.
+  # sibling repositories can change them without touching this one. Daily, so
+  # the lag after a sibling release is at most a day; workflow_dispatch below
+  # covers the case where that is still too long.
   schedule:
-    - cron: '17 4 * * 1'
+    - cron: '17 4 * * *'
   workflow_dispatch:
 
 permissions:

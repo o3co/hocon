@@ -6,8 +6,9 @@ sidebar:
 ---
 
 HOCON (Human-Optimized Config Object Notation) is a superset of JSON designed by Lightbend for
-configuration files. Every valid JSON document is a valid HOCON document, so adopting it never
-invalidates what you already have. The specification lives in
+configuration files. A JSON document whose root is an object or an array is also a valid HOCON
+document, so adopting it does not invalidate the configuration files you already have. (A bare
+scalar such as `42` is valid JSON but not a HOCON document.) The specification lives in
 [`HOCON.md`](https://github.com/lightbend/config/blob/main/HOCON.md) and is the sole reference
 these implementations are measured against.
 
@@ -76,11 +77,14 @@ extras += b
 ```hocon
 include "defaults.conf"
 include required(file("secrets.conf"))
-include url("https://example.com/shared.conf")
 ```
 
 Included documents merge into the point where they appear, so an include at the top provides
 defaults and one at the bottom overrides.
+
+The specification also defines `include url(...)` and `include classpath(...)`. None of the four
+implementations supports either: fetching remote configuration belongs to your HTTP client, and
+the classpath is a JVM concept. Fetch the content yourself and parse it.
 
 ### Units
 
