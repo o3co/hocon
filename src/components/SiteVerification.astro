@@ -1,0 +1,18 @@
+---
+/**
+ * Google Search Console ownership token.
+ *
+ * Separate from Analytics on purpose: Search Console can verify through the
+ * GA tag, but only when the page carries Google's stock snippet with the ID
+ * written literally — and ours passes the ID through `define:vars` so Consent
+ * Mode can run first. A dedicated meta tag keeps the two concerns apart.
+ *
+ * Like the measurement ID, the token comes from the environment. Unset emits
+ * nothing, so a fork does not claim to be this site. It must stay deployed
+ * after verification succeeds: Search Console re-checks periodically and drops
+ * ownership when the tag disappears.
+ */
+const token = import.meta.env.PUBLIC_GOOGLE_SITE_VERIFICATION;
+---
+
+{token && <meta name="google-site-verification" content={token} />}
