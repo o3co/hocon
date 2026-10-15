@@ -51,16 +51,23 @@ if err != nil {
     log.Fatal(err)
 }
 
-host := cfg.GetString("server.host")  // "localhost"
-port := cfg.GetInt("server.port")     // 8080
+host, err := cfg.GetStringE("server.host")  // "localhost"
+if err != nil {
+    log.Fatal(err)
+}
+port, err := cfg.GetIntE("server.port")     // 8080
+if err != nil {
+    log.Fatal(err)
+}
 ```
+
+The `E` getters return an error; `GetString` and `GetInt` are the panicking variants, for
+configuration you have already validated.
 
 </TabItem>
 <TabItem label="Rust">
 
 ```rust
-use hocon;
-
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let config = hocon::parse(r#"
         server {
@@ -99,8 +106,9 @@ cfg.has("server.host")          # True
 </Tabs>
 
 The accessor names follow each language's conventions rather than a single cross-language
-spelling — `getString` in TypeScript, `GetString` in Go, `get_string` in Rust and Python. What
-they do is identical.
+spelling — `getString` in TypeScript, `GetStringE` in Go, `get_string` in Rust and Python. They
+read the same paths with the same coercion rules; how a missing key or a type mismatch comes
+back — an exception, an `error`, a `Result` — follows the language.
 
 ## Layer environment overrides
 

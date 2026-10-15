@@ -47,13 +47,18 @@ whichever one flatters a given implementation would defeat the point of keeping 
 
 ## Where the expected values come from
 
-Fixtures and expected values live in [xx.hocon](https://github.com/o3co/xx.hocon) and are
-generated from Lightbend's own implementation. Hand-written expectations are refused on
-principle: a hand-written expectation encodes what someone believed the specification says,
-and the entire purpose of the corpus is to catch the cases where that belief is wrong.
+Fixtures and expected values live in [xx.hocon](https://github.com/o3co/xx.hocon). For the
+specification corpus behind the S-items, expected values are generated from Lightbend's own
+implementation, and hand-written expectations are refused on principle: a hand-written
+expectation encodes what someone believed the specification says, and the entire purpose of the
+corpus is to catch the cases where that belief is wrong. The fixtures for the project's own
+conventions (the E- and F-items below) have no reference implementation to generate from, so
+those expectations are written by this project — which is why they are kept out of the
+percentages.
 
-Some items are out of scope for all four by policy rather than by omission — classpath
-resources are a JVM concept, MIME types are set by HTTP servers rather than parsers, and so on.
+Some items are out of scope for all four by policy rather than by omission — URL includes leave
+fetching to your HTTP client, classpath resources are a JVM concept, MIME types are set by HTTP
+servers rather than parsers, and so on.
 Each carries its reasoning in the matrix.
 
 ## Behaviour the specification does not define

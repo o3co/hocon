@@ -29,14 +29,14 @@ npm install @o3co/ts.hocon smol-toml   # only if you need TOML
 ```
 
 ```ts
-import { fromToml } from '@o3co/ts.hocon/adapters/toml'
+import { parseTomlConfig } from '@o3co/ts.hocon/adapters/toml'
 ```
 
 </TabItem>
 <TabItem label="Go">
 
 A nested module. `github.com/o3co/go.hocon` and `github.com/o3co/go.hocon/adapters` have
-separate `go.mod` files, so the core module's dependency graph stays empty.
+separate `go.mod` files, so the core module has no runtime dependencies.
 
 ```sh
 go get github.com/o3co/go.hocon/adapters
@@ -89,8 +89,9 @@ How a YAML document decides that `no` is a boolean, or that `1.0` is a float, is
 YAML library each implementation uses — and those libraries do not all agree, particularly
 across YAML 1.1 and 1.2. This project pins the mapping *from* the decoded tree *onto* the
 configuration model, and explicitly does not pin scalar resolution. Where that matters, every
-implementation exposes a tree-level entry point so you can decode with a library you have
-chosen yourself and hand the result in.
+implementation exposes a tree-level entry point so you can decode the document yourself and hand
+the result in. In TypeScript, Go and Python that can be a library you have chosen; in Rust the
+entry point takes a `yaml_rust2::Yaml`, so the tree has to be in that library's type.
 </Aside>
 
 ## The rules are numbered, and shared

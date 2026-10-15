@@ -24,8 +24,9 @@ places where the spec is silent and four independent parsers could reasonably di
 pinned separately as a numbered convention, so "undefined" never quietly means "different".
 
 **One corpus.** Fixtures and expected values live in
-[xx.hocon](https://github.com/o3co/xx.hocon) and are generated from Lightbend's own
-implementation, not hand-written. All four run against it.
+[xx.hocon](https://github.com/o3co/xx.hocon), and all four run against it. For the
+specification items, the expected values are generated from Lightbend's own implementation,
+not hand-written.
 
 **One pipeline.** Lexer, parser, resolver, in that order, with substitution resolution as a
 distinct phase after the document is fully parsed. A fix in one port is a diff the other three
@@ -38,10 +39,12 @@ dependencies in the core. Rust carries one (`indexmap`, for insertion-ordered ma
 foreign-format adapter is opt-in in all four, so nothing reaches the core.
 
 **Language-forced divergence.** A few differences are not choices. JavaScript strings are
-UTF-16 and can hold an unpaired surrogate, so the TypeScript port accepts one where Rust
-refuses; Go strings are arbitrary bytes where JavaScript strings arrive already decoded. These
-are recorded as per-implementation out-of-scope items with the reasoning attached, rather than
-smoothed over.
+UTF-16 and can hold an unpaired surrogate (a lone `\uD800` escape), so the TypeScript port
+accepts one where Go, Rust and Python refuse it. Go strings are arbitrary bytes where
+JavaScript strings arrive already decoded. Both are numbered checklist items with the reasoning
+attached, rather than smoothed over: the surrogate item is out of scope for all four, because no
+single answer fits every language's strings, and input decoding is out of scope only where the
+language has decoded the input before the parser sees it.
 
 **Coverage.** The four are not at identical points on the checklist at any given moment.
 

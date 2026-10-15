@@ -1,0 +1,12 @@
+---
+/**
+ * The Go floor for installing hocon2 from source, read from hocon2's go.mod
+ * during the build. It differs from go.hocon's, and it moves with hocon2's
+ * releases, so it is not written down here.
+ */
+import { getHocon2MinimumGo } from '../data/implementations';
+
+const minimumGo = await getHocon2MinimumGo();
+---
+
+{minimumGo}

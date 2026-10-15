@@ -107,6 +107,9 @@ export const IMPLEMENTATIONS: readonly Implementation[] = [
 
 export const SPEC_REPO = { repo: 'xx.hocon', branch: 'main' };
 
+/** The CLI. Its go.mod floor is not go.hocon's, so it is read separately. */
+export const HOCON2_REPO = { repo: 'hocon2', branch: 'develop' };
+
 async function fetchRaw(repo: string, branch: string, path: string): Promise<string> {
   const url = `${RAW}/o3co/${repo}/${branch}/${path}`;
   const res = await fetch(url);
@@ -174,10 +177,25 @@ export async function getImplementationFacts(): Promise<ImplementationFacts[]> {
   );
 }
 
+/** Minimum Go version for `go install`-ing hocon2, read from its go.mod at build time. */
+export async function getHocon2MinimumGo(): Promise<string> {
+  if (OFFLINE) return '—';
+  const source = await fetchRaw(HOCON2_REPO.repo, HOCON2_REPO.branch, 'go.mod');
+  try {
+    return parseMinimumVersion('go.mod', source);
+  } catch (cause) {
+    throw new Error(
+      `Could not read the minimum Go version out of ${HOCON2_REPO.repo}/go.mod: ` +
+        `${(cause as Error).message}. Update parseMinimumVersion() rather than ` +
+        `transcribing the version by hand.`
+    );
+  }
+}
+
 export interface ComplianceRow {
   repo: string;
   detailUrl: string;
-  /** (✅ + ⚠️·0.5) / 210 — every spec item, including the out-of-scope ones. */
+  /** (✅ + ⚠️·0.5) / every spec item, including the out-of-scope ones. */
   specTotal: string;
   /** Same numerator over a per-implementation denominator that drops ➖ items. */
   inScope: string;
@@ -220,6 +238,14 @@ export async function getComplianceTable(): Promise<ComplianceRow[]> {
     throw new Error(
       `Expected ${IMPLEMENTATIONS.length} rows in xx.hocon's compliance matrix, parsed ${rows.length}. ` +
         `The table layout changed — fix getComplianceTable() rather than pasting the numbers in.`
+    );
+  }
+  const expected = IMPLEMENTATIONS.map((impl) => impl.repo).sort();
+  const parsed = rows.map((row) => row.repo).sort();
+  if (expected.join() !== parsed.join()) {
+    throw new Error(
+      `xx.hocon's compliance matrix lists ${parsed.join(', ')}; this site expects ` +
+        `${expected.join(', ')}. Fix IMPLEMENTATIONS or getComplianceTable() to match.`
     );
   }
   return rows;
