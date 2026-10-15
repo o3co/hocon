@@ -80,9 +80,10 @@ this site measures interest at the front door.
 
 Ownership of the `https://o3co.github.io/hocon/` property is proven with the HTML-tag method,
 emitted by [`src/components/SiteVerification.astro`](src/components/SiteVerification.astro) from
-`PUBLIC_GOOGLE_SITE_VERIFICATION` (CI: repository variable `GOOGLE_SITE_VERIFICATION`). The GA
-verification method does not work here: it looks for Google's stock snippet with the ID written
-literally, and the analytics tag passes the ID through a variable so Consent Mode can run first.
+`PUBLIC_GOOGLE_SITE_VERIFICATION` (CI: repository variable `GOOGLE_SITE_VERIFICATION`). Set it to
+the `content` value only, not the whole `<meta>` tag Search Console shows. The GA verification
+method failed here, most likely because it expects Google's stock snippet with the ID written
+literally, while the analytics tag passes the ID through a variable so Consent Mode can run first.
 Keep the tag deployed after verification; Search Console re-checks it.
 
 ## Licence

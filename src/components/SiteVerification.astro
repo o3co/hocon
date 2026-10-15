@@ -2,8 +2,8 @@
 /**
  * Google Search Console ownership token.
  *
- * Separate from Analytics on purpose: Search Console can verify through the
- * GA tag, but only when the page carries Google's stock snippet with the ID
+ * Separate from Analytics on purpose: Search Console's GA verification failed
+ * here, most likely because it expects Google's stock snippet with the ID
  * written literally — and ours passes the ID through `define:vars` so Consent
  * Mode can run first. A dedicated meta tag keeps the two concerns apart.
  *

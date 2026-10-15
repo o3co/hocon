@@ -38,9 +38,9 @@ export default defineConfig({
         shiki: { langs: [hoconGrammar] },
       },
       components: {
-        // Both overrides render the stock component and append to it: the tag
-        // in <head>, the consent bar at the end of the page. Everything else
-        // stays stock Starlight.
+        // Both overrides render the stock component and append to it: the
+        // Search Console and analytics tags in <head>, the consent bar at the
+        // end of the page. Everything else stays stock Starlight.
         Head: './src/components/Head.astro',
         Footer: './src/components/Footer.astro',
       },
