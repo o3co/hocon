@@ -229,8 +229,10 @@ pub fn load(config: &hocon::Config) -> Result<Auth, hocon::ConfigError> {
 }
 ```
 
-This needs the crate's `serde` and `include-package` features
-(`cargo add hocon-parser --features serde,include-package`).
+This needs the crate's `serde` and `include-package` features, and your own `serde` dependency
+with `derive` (`cargo add hocon-parser --features serde,include-package` and
+`cargo add serde --features derive`). See the
+[Serde section of the Rust README](https://github.com/o3co/rs.hocon#serde-deserialization).
 
 </TabItem>
 <TabItem label="Python">
