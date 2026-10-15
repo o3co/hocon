@@ -90,8 +90,8 @@ the classpath is a JVM concept. Fetch the content yourself and parse it.
 
 ### Units
 
-Durations and byte sizes are part of the language, so the parser hands you a number and not a
-string to interpret yourself.
+Durations and byte sizes are part of the language, so the parser hands you a typed value (a
+number in a chosen unit, or the language's own duration type) and not a string to interpret yourself.
 
 ```hocon
 timeout = 30s          // also: ms, minutes, h, d
