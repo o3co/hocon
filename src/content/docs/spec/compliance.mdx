@@ -66,16 +66,20 @@ Each carries its reasoning in the matrix.
 
 Generating expectations from Lightbend catches the cases where a belief about the specification
 is wrong, but only for the inputs someone thought to write. The
-[conformance suite](https://github.com/lejmr/zig-hocon/tree/main/conformance) by Miloš Kozák,
-written for [zig-hocon](https://github.com/lejmr/zig-hocon), comes at the same question from the
-other side. It turns every sentence of `HOCON.md` into a case, independently of this project, and
-scores each case both against its reading of the specification and against lightbend/config. Its
+[conformance suite](https://github.com/lejmr/zig-hocon/tree/main/conformance) by
+[Miloš Kozák](https://github.com/lejmr), written for [zig-hocon](https://github.com/lejmr/zig-hocon),
+starts from the text of the specification instead of from this project's corpus. Each of its cases
+is one sentence of `HOCON.md`, written as an input and the value it must produce, independently of
+this project. Every case is scored both against the suite's reading of the specification and
+against Lightbend's implementation. Its
 [published results](https://github.com/lejmr/zig-hocon/blob/main/conformance/README.md#published-results)
-include these implementations.
+compare a number of HOCON parsers against both.
 
-This project uses it as a second source of inputs. A row where the specification and Lightbend
-agree but an implementation here does not is a bug by this page's own standard. The rows the suite
-surfaced are tracked in [xx.hocon#122](https://github.com/o3co/xx.hocon/issues/122).
+This project uses it as a second source of inputs. A row on required, in-scope behaviour where the
+suite's reading and Lightbend agree, but an implementation here does not, is a bug by the standard
+described above. The rows surfaced so far are tracked in
+[xx.hocon#122](https://github.com/o3co/xx.hocon/issues/122). The suite counts cases, not S-items, so
+its figures are not comparable to the table at the top of this page.
 
 ## Behaviour the specification does not define
 
@@ -93,5 +97,5 @@ homework it set itself.
 
 - [Compliance matrix](https://github.com/o3co/xx.hocon/blob/main/docs/compliance-matrix.md) — the cross-implementation roll-up
 - [Specification checklist](https://github.com/o3co/xx.hocon/blob/main/docs/spec-checklist.md) — every S-item, with the clause it derives from
-- [lejmr/zig-hocon conformance suite](https://github.com/lejmr/zig-hocon/tree/main/conformance) — an independent, implementation-neutral suite, and its published results
+- [lejmr/zig-hocon conformance suite](https://github.com/lejmr/zig-hocon/tree/main/conformance) — an independent suite derived from the specification, with [published results](https://github.com/lejmr/zig-hocon/blob/main/conformance/README.md#published-results)
 - Per-implementation detail: [ts](https://github.com/o3co/ts.hocon/blob/develop/docs/spec-compliance.md) · [go](https://github.com/o3co/go.hocon/blob/develop/docs/spec-compliance.md) · [rs](https://github.com/o3co/rs.hocon/blob/develop/docs/spec-compliance.md) · [py](https://github.com/o3co/py.hocon/blob/main/docs/spec-compliance.md)
