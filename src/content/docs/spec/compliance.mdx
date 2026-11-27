@@ -62,6 +62,21 @@ fetching to your HTTP client, classpath resources are a JVM concept, MIME types 
 servers rather than parsers, and so on.
 Each carries its reasoning in the matrix.
 
+## An independent check
+
+Generating expectations from Lightbend catches the cases where a belief about the specification
+is wrong, but only for the inputs someone thought to write. The
+[conformance suite](https://github.com/lejmr/zig-hocon/tree/main/conformance) by Miloš Kozák,
+written for [zig-hocon](https://github.com/lejmr/zig-hocon), comes at the same question from the
+other side. It turns every sentence of `HOCON.md` into a case, independently of this project, and
+scores each case both against its reading of the specification and against lightbend/config. Its
+[published results](https://github.com/lejmr/zig-hocon/blob/main/conformance/README.md#published-results)
+include these implementations.
+
+This project uses it as a second source of inputs. A row where the specification and Lightbend
+agree but an implementation here does not is a bug by this page's own standard. The rows the suite
+surfaced are tracked in [xx.hocon#122](https://github.com/o3co/xx.hocon/issues/122).
+
 ## Behaviour the specification does not define
 
 The specification is silent in places where four independent parsers could each pick something
@@ -78,4 +93,5 @@ homework it set itself.
 
 - [Compliance matrix](https://github.com/o3co/xx.hocon/blob/main/docs/compliance-matrix.md) — the cross-implementation roll-up
 - [Specification checklist](https://github.com/o3co/xx.hocon/blob/main/docs/spec-checklist.md) — every S-item, with the clause it derives from
+- [lejmr/zig-hocon conformance suite](https://github.com/lejmr/zig-hocon/tree/main/conformance) — an independent, implementation-neutral suite, and its published results
 - Per-implementation detail: [ts](https://github.com/o3co/ts.hocon/blob/develop/docs/spec-compliance.md) · [go](https://github.com/o3co/go.hocon/blob/develop/docs/spec-compliance.md) · [rs](https://github.com/o3co/rs.hocon/blob/develop/docs/spec-compliance.md) · [py](https://github.com/o3co/py.hocon/blob/main/docs/spec-compliance.md)
